@@ -5,6 +5,7 @@ from annoy import AnnoyIndex
 import operator
 import numpy as np
 from index_builder import IndexBuilder
+import os
 
 
 class IndexWorker(pykka.ThreadingActor):
@@ -21,13 +22,12 @@ class IndexWorker(pykka.ThreadingActor):
         self.load()
 
     def load(self):
-        if len(self.indexes) > 0:
-            for index in self.indexes:
-                index.unload()
+        for index in self.indexes:
+            index.unload()
 
         for f in sorted(listdir(self.index_dir)):
             if f.endswith(".ann"):
-                self.index_files.append(f)
+                self.index_files.append(join(self.index_dir,f))
                 index = AnnoyIndex(self.feat_size, metric='euclidean')
                 index.load(join(self.index_dir, f))
                 self.indexes.append(index)
@@ -60,9 +60,21 @@ class IndexWorker(pykka.ThreadingActor):
         if len(self.mem_store) > 0:
             self.tmp_mem_store = self.mem_store
             self.mem_store = []
-            path = join(self.index_dir,self.get_next_index_file_name())
-            pykka.ActorRegistry.get_by_class(IndexBuilder)[0].build(index_file=path, vectors=self.mem_store, sender_urn=self.actor_urn)
+            path = join(self.index_dir, self.get_next_index_file_name())
+            pykka.ActorRegistry.get_by_class(IndexBuilder)[0].build(
+                    index_file=path,
+                    vectors=self.mem_store,
+                    sender_urn=self.actor_urn)
 
     def run_compaction(self):
         if len(self.indexes) > 1 and self.indexes[-1].get_n_items() < 1000000:
-            pykka.ActorRegistry.get_by_class(IndexBuilder)[0].merge_indicies(self.index_files[-2], self.index_files[-1])
+            pykka.ActorRegistry.get_by_class(IndexBuilder)[0].proxy().merge_indicies(self.index_files[-2], self.index_files[-1], self.actor_urn)
+
+    def complete_compaction(self, new_index_file, index_file_a, index_file_b):
+        for index in self.indexes:
+            index.unload()
+        os.remove(index_file_a)
+        os.remove(index_file_b)
+        os.rename(new_index_file, index_file_a)
+        self.load()
+
