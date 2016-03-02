@@ -2,17 +2,17 @@ import pykka
 from os import walk
 from os.path import join
 from worker import IndexWorker
+import config
 
 
 
 class IndexManager(pykka.ThreadingActor):
-    def __init__(self, actor_urn, dir):
+    def __init__(self):
         super(IndexManager, self).__init__()
-        self.actor_urn = actor_urn
-        self.dir = dir
+        self.dir = config.index_dir
         workers = {}
-        for x in walk(dir):
-            workers[x[0]] = IndexWorker.start(index_dir=join(dir, x[0]), actor_urn=x[0]).proxy()
+        for x in walk(self.dir):
+            workers[x[0]] = IndexWorker.start(index_dir=join(self.dir, x[0]), actor_urn=x[0]).proxy()
         self.workers = workers
 
 
@@ -23,13 +23,13 @@ class IndexManager(pykka.ThreadingActor):
         return self.workers[index_name].insert(vector)
 
 
-    def build_indicies(self):
+    def build_new_indicies(self):
         for worker in self.workers.values():
             worker.build_index()
 
     def run_compaction(self):
         for worker in self.workers.values():
-            worker.build_indicies()
+            worker.runCompaction()
 
     def stop(self):
         pykka.ActorRegistry.stop_all()

@@ -1,12 +1,21 @@
 import signal
 import sys
 from apscheduler.schedulers.blocking import BlockingScheduler
+from actors import IndexManager
 
-sched = BlockingScheduler()
+scheduler = BlockingScheduler()
+index_manager = IndexManager.start().proxy()
 
-@sched.scheduled_job('interval', seconds=1)
-def timed_job():
-    print('This job is run every three minutes.')
+
+@scheduler.scheduled_job('interval', minutes=30)
+def compaction_job():
+        index_manager.run_compaction()
+
+
+@scheduler.scheduled_job('interval', minutes=60)
+def build_new_indices():
+        index_manager.build_new_indices()
+
 
 def signal_handler(signal, frame):
         print('You pressed Ctrl+C!')
@@ -14,13 +23,11 @@ def signal_handler(signal, frame):
 
 
 
-
-signal.signal(signal.SIGINT, signal_handler)
-print('Press Ctrl+C')
-sched.start()
-
-
-signal.pause()
+if __name__ == '__main__':
+        signal.signal(signal.SIGINT, signal_handler)
+        print('Application started, press Ctrl+C to save state and exit')
+        scheduler.start()
+        signal.pause()
 
 
 

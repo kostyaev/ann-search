@@ -1,9 +1,5 @@
 import pykka
-from os.path import join
-from os import listdir
 from annoy import AnnoyIndex
-import operator
-import numpy as np
 
 
 
@@ -44,9 +40,11 @@ class IndexBuilder(pykka.ThreadingActor):
 
         new_index_file = index_file_a + ".merged"
 
-        new_index.save()
         index_a.unload()
         index_b.unload()
+
+        new_index.build(self.n_trees)
+        new_index.save(new_index_file)
         new_index.unload()
 
         pykka.ActorRegistry.get_by_urn(sender_urn).proxy().complete_compaction(
