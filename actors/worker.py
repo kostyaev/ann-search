@@ -38,6 +38,8 @@ class IndexWorker(pykka.ThreadingActor):
                 self.tmp_mem_store = np.load(join(self.index_dir, f)).tolist()
         self.mem_store = self.tmp_mem_store
         self.tmp_mem_store = []
+        logger.info("Loaded {0} files with total {1} records for index {2}"
+                    .format(len(self.indexes), self.prev_id, self.actor_urn))
 
     def distance(self, a, b):
         distances = (np.array(a) - np.array(b)) ** 2

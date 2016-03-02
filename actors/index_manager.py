@@ -36,8 +36,8 @@ class IndexManager(pykka.ThreadingActor):
         for worker in self.workers.values():
             worker.runCompaction()
 
-    def stop(self):
-        logger.info("Stopping workers")
+    def stop_all(self):
+        logger.info("Stopping workers, saving state...")
         for worker in self.workers.values():
             worker.runCompaction()
         pykka.ActorRegistry.stop_all()
