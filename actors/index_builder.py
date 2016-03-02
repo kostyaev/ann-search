@@ -1,6 +1,6 @@
 import pykka
 from annoy import AnnoyIndex
-
+from loggers import index_builder_logger as logger
 
 
 class IndexBuilder(pykka.ThreadingActor):
@@ -21,6 +21,7 @@ class IndexBuilder(pykka.ThreadingActor):
 
 
     def merge_indicies(self, index_file_a, index_file_b, sender_urn):
+        logger.info("Merging {0} and {1} for {2} index".format(index_file_a, index_file_b, sender_urn))
         index_a = AnnoyIndex(self.feat_size, metric='euclidean')
         index_b = AnnoyIndex(self.feat_size, metric='euclidean')
         new_index = AnnoyIndex(self.feat_size, metric='euclidean')
@@ -45,8 +46,13 @@ class IndexBuilder(pykka.ThreadingActor):
 
         new_index.build(self.n_trees)
         new_index.save(new_index_file)
-        new_index.unload()
+        logger.info("Merging {0} and {1} for {2} index, total number of items: {3}".format(
+                index_file_a,
+                index_file_b,
+                sender_urn,
+                cnt))
 
+        new_index.unload()
         pykka.ActorRegistry.get_by_urn(sender_urn).proxy().complete_compaction(
                 new_index_file=new_index_file,
                 index_file_a=index_file_a,

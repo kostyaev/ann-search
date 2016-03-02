@@ -6,6 +6,7 @@ import operator
 import numpy as np
 from index_builder import IndexBuilder
 import os
+from loggers import worker_logger as logger
 
 
 class IndexWorker(pykka.ThreadingActor):
@@ -22,6 +23,7 @@ class IndexWorker(pykka.ThreadingActor):
         self.load()
 
     def load(self):
+        logger.info("Loading index {0}".format(self.actor_urn))
         for index in self.indexes:
             index.unload()
 
@@ -60,6 +62,7 @@ class IndexWorker(pykka.ThreadingActor):
 
     def build_index(self):
         if len(self.mem_store) > 0:
+            logger.info("Building index {0}".format(self.get_next_index_file_name()))
             self.tmp_mem_store = self.mem_store
             self.mem_store = []
             path = join(self.index_dir, self.get_next_index_file_name())
@@ -70,6 +73,7 @@ class IndexWorker(pykka.ThreadingActor):
 
     def run_compaction(self):
         if len(self.indexes) > 1 and self.indexes[-1].get_n_items() < 1000000:
+            logger.info("Running compaction for index {0}".format(self.actor_urn))
             pykka.ActorRegistry.get_by_class(IndexBuilder)[0].proxy().merge_indicies(self.index_files[-2], self.index_files[-1], self.actor_urn)
 
     def complete_compaction(self, new_index_file, index_file_a, index_file_b):
@@ -78,10 +82,13 @@ class IndexWorker(pykka.ThreadingActor):
         os.remove(index_file_a)
         os.remove(index_file_b)
         os.rename(new_index_file, index_file_a)
+        logger.info("Compaction for index {0} completed".format(self.actor_urn))
+
         self.load()
 
     def save(self):
         if len(self.mem_store) > 0:
+            logger.info("Dumping memory state for index {0}".format(self.actor_urn))
             persisted_mem_store_file = join(self.index_dir, "saved_state")
             np.save(persisted_mem_store_file, np.array(self.mem_store))
 

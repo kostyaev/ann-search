@@ -2,13 +2,10 @@ import signal
 import sys
 from apscheduler.schedulers.blocking import BlockingScheduler
 from actors import IndexManager
-from logging import config as _config
-import logging
+from loggers import main_logger as logger
 
 scheduler = BlockingScheduler()
 index_manager = IndexManager.start().proxy()
-_config.fileConfig('logging.conf')
-logger = logging.getLogger("AnnSearcher")
 
 @scheduler.scheduled_job('interval', minutes=30)
 def compaction_job():
@@ -30,6 +27,11 @@ if __name__ == '__main__':
         signal.signal(signal.SIGINT, signal_handler)
         logger.info('Application started, press Ctrl+C to save state and exit')
         scheduler.start()
+
+
+
+
+
         signal.pause()
 
 
