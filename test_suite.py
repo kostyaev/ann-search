@@ -27,7 +27,6 @@ def test_insert_to_new_index(index_manager):
     assert 'test1' in os.listdir(test_dir)
     assert index_manager.get_number_of_records("test1").get(timeout=3) == 1
 
-
 def test_insert_to_existing_index(index_manager):
     index_manager.insert(index_name="test1", vector=[2]).get(timeout=3)
     index_manager.insert(index_name="test1", vector=[2]).get(timeout=3)
@@ -48,4 +47,28 @@ def test_find_in_existing_index(index_manager):
 def test_build_index(index_manager):
     index_manager.build_new_indices()
     time.sleep(1)
+    assert index_manager.get_number_of_records("test1").get(timeout=3) == 3
     assert "test1_0.ann" in os.listdir(test_dir + "test1")
+
+
+def test_find_in_after_build(index_manager):
+    ids = index_manager.find_nearest(index_name="test1", vector=[2], number=2).get()
+    assert len(ids) == 2
+    item = index_manager.get_item_by_id(index_name="test1", id=ids[0]).get()
+    assert cmp(item, [2]) == 0
+    assert item[0] == 2
+
+    ids = index_manager.find_nearest(index_name="test1", vector=[1], number=2).get()
+    item = index_manager.get_item_by_id(index_name="test1", id=ids[0]).get()
+    assert cmp(item, [1]) == 0
+
+def test_insert_more_elements(index_manager):
+    index_manager.insert(index_name="test1", vector=[3]).get(timeout=3)
+    index_manager.insert(index_name="test1", vector=[4]).get(timeout=3)
+    assert index_manager.get_number_of_records("test1").get(timeout=3) == 5
+
+def test_build_index_again(index_manager):
+    index_manager.build_new_indices()
+    time.sleep(1)
+    assert index_manager.get_number_of_records("test1").get(timeout=3) == 5
+    assert "test1_1.ann" in os.listdir(test_dir + "test1")

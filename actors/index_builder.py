@@ -21,7 +21,11 @@ class IndexBuilder(pykka.ThreadingActor):
         logger.info("Saving index file {0}".format(index_file))
         new_index.save(index_file)
         new_index.unload()
-        pykka.ActorRegistry.get_by_urn(sender_urn).proxy().load()
+        print sender_urn
+        print pykka.ActorRegistry.get_by_urn(actor_urn=sender_urn)
+        pykka.ActorRegistry.get_by_urn(actor_urn=sender_urn).proxy().load()
+        logger.info("Sent load command to worker")
+
 
 
     def merge_indicies(self, index_file_a, index_file_b, sender_urn):

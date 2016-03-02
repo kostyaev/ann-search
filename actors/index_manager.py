@@ -8,7 +8,6 @@ from index_builder import IndexBuilder
 import config
 from loggers import index_manager_logger as logger
 
-
 class IndexManager(pykka.ThreadingActor):
     def __init__(self, index_dir=config.index_dir, feat_size=128):
         logger.info("Initializing actors")

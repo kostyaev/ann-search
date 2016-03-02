@@ -11,8 +11,9 @@ from loggers import worker_logger as logger
 
 class IndexWorker(pykka.ThreadingActor):
     def __init__(self, index_dir, actor_urn, feat_size=128):
-        super(IndexWorker, self).__init__()
+        super(IndexWorker, self).__init__(actor_urn)
         self.actor_urn = actor_urn
+        self.actor_ref.actor_urn = actor_urn
         self.index_dir = index_dir
         self.feat_size = feat_size
         self.indexes = []
@@ -22,6 +23,7 @@ class IndexWorker(pykka.ThreadingActor):
         self.load()
 
     def load(self):
+        self.prev_id = -1
         logger.info("Loading index {0}".format(self.actor_urn))
         for index in self.indexes:
             index.unload()
@@ -34,9 +36,9 @@ class IndexWorker(pykka.ThreadingActor):
                 self.indexes.append(index)
                 self.prev_id += index.get_n_items()
             elif f.endswith('saved_state'):
-                self.tmp_mem_store = np.load(join(self.index_dir, f)).tolist()
+                self.mem_store = np.load(join(self.index_dir, f)).tolist()
         logger.info("Loaded {0} files with total {1} records for index {2}"
-                    .format(len(self.indexes), self.prev_id, self.actor_urn))
+                    .format(len(self.indexes), self.prev_id + 1, self.actor_urn))
 
     def distance(self, a, b):
         distances = (np.array(a) - np.array(b)) ** 2
@@ -50,8 +52,11 @@ class IndexWorker(pykka.ThreadingActor):
 
         in_mem_candidates = [(self.prev_id + k + 1, self.distance(v, vector)) for k, v in enumerate(self.mem_store)]
         candidates.extend(in_mem_candidates)
-        ids, distances = zip(*sorted(candidates, key=operator.itemgetter(1)))
-        return ids[:number]
+        if len(candidates) == 0:
+            return []
+        else:
+            ids, distances = zip(*sorted(candidates, key=operator.itemgetter(1)))
+            return ids[:number]
 
     def get_item_by_id(self, id):
         if id <= self.prev_id:
@@ -97,7 +102,6 @@ class IndexWorker(pykka.ThreadingActor):
         os.remove(index_file_b)
         os.rename(new_index_file, index_file_a)
         logger.info("Compaction for index {0} completed".format(self.actor_urn))
-
         self.load()
 
     def save(self):
