@@ -32,6 +32,8 @@ class IndexWorker(pykka.ThreadingActor):
                 index.load(join(self.index_dir, f))
                 self.indexes.append(index)
                 self.prev_id += index.get_n_items()
+            elif f.endswith('saved_state'):
+                self.tmp_mem_store = np.load(join(self.index_dir, f)).tolist()
         self.mem_store = self.tmp_mem_store
         self.tmp_mem_store = []
 
@@ -77,4 +79,11 @@ class IndexWorker(pykka.ThreadingActor):
         os.remove(index_file_b)
         os.rename(new_index_file, index_file_a)
         self.load()
+
+    def save(self):
+        if len(self.mem_store) > 0:
+            persisted_mem_store_file = join(self.index_dir, "saved_state")
+            np.save(persisted_mem_store_file, np.array(self.mem_store))
+
+
 

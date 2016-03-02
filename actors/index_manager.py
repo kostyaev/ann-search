@@ -32,6 +32,8 @@ class IndexManager(pykka.ThreadingActor):
             worker.runCompaction()
 
     def stop(self):
+        for worker in self.workers.values():
+            worker.runCompaction()
         pykka.ActorRegistry.stop_all()
 
 
