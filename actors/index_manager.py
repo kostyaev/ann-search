@@ -21,9 +21,9 @@ class IndexManager(pykka.ThreadingActor):
         self.feat_size = feat_size
         IndexBuilder.start(feat_size=feat_size)
 
-    def find_nearest(self, index_name, vector, number):
+    def find_nearest(self, index_name, vector, limit):
         if (self.workers.has_key(index_name)):
-            return self.workers[index_name].find_nearest(vector, number).get()
+            return self.workers[index_name].find_nearest(vector, limit).get()
         else:
             return []
 

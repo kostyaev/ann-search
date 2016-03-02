@@ -21,8 +21,6 @@ class IndexBuilder(pykka.ThreadingActor):
         logger.info("Saving index file {0}".format(index_file))
         new_index.save(index_file)
         new_index.unload()
-        print sender_urn
-        print pykka.ActorRegistry.get_by_urn(actor_urn=sender_urn)
         pykka.ActorRegistry.get_by_urn(actor_urn=sender_urn).proxy().load()
         logger.info("Sent load command to worker")
 

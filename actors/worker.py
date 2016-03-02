@@ -24,6 +24,7 @@ class IndexWorker(pykka.ThreadingActor):
 
     def load(self):
         self.prev_id = -1
+        self.indexes = []
         logger.info("Loading index {0}".format(self.actor_urn))
         for index in self.indexes:
             index.unload()
@@ -44,24 +45,35 @@ class IndexWorker(pykka.ThreadingActor):
         distances = (np.array(a) - np.array(b)) ** 2
         return distances.sum(axis=0)
 
-    def find_nearest(self, vector, number):
+    def find_nearest(self, vector, limit):
         candidates = []
+        print len(self.indexes)
+        offset = 0
         for index in self.indexes:
-            ids, distances = index.get_nns_by_vector(vector, number, include_distances=True)
+            ids, distances = index.get_nns_by_vector(vector, limit, include_distances=True)
+            ids = (np.array(ids) + offset).tolist()
+            print "Ids with offset: {0}".format(ids)
+            offset += index.get_n_items()
             candidates.extend(zip(ids, distances))
 
         in_mem_candidates = [(self.prev_id + k + 1, self.distance(v, vector)) for k, v in enumerate(self.mem_store)]
         candidates.extend(in_mem_candidates)
+        print candidates
         if len(candidates) == 0:
             return []
         else:
             ids, distances = zip(*sorted(candidates, key=operator.itemgetter(1)))
-            return ids[:number]
+            print ids
+            return ids[:limit]
 
     def get_item_by_id(self, id):
+        for index in self.indexes:
+            for i in range(index.get_n_items()):
+                print index.get_item_vector(i)
+
         if id <= self.prev_id:
             for index in self.indexes:
-                if id - index.get_n_items() <= 0:
+                if id - index.get_n_items() < 0:
                     return index.get_item_vector(id)
                 else:
                     id -= index.get_n_items()
