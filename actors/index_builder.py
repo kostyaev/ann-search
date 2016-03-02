@@ -11,10 +11,14 @@ class IndexBuilder(pykka.ThreadingActor):
 
 
     def build(self, index_file, vectors, sender_urn):
+        logger.info("Building {0}".format(index_file))
+        logger.info("Vectors {0}".format(vectors))
         new_index = AnnoyIndex(self.feat_size, metric='euclidean')
         for idx, v in enumerate(vectors):
+            logger.info("Adding item {0} with id {1}".format(v, idx))
             new_index.add_item(idx, v)
         new_index.build(self.n_trees)
+        logger.info("Saving index file {0}".format(index_file))
         new_index.save(index_file)
         new_index.unload()
         pykka.ActorRegistry.get_by_urn(sender_urn).proxy().load()
