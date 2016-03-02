@@ -58,6 +58,7 @@ class IndexWorker(pykka.ThreadingActor):
 
     def insert(self, vector):
         self.mem_store.append(vector)
+        logger.info("Inserted new record")
 
     def get_next_index_file_name(self):
         return self.actor_urn + '_' + str(len(self.indexes))
@@ -93,6 +94,10 @@ class IndexWorker(pykka.ThreadingActor):
             logger.info("Dumping memory state for index {0}".format(self.actor_urn))
             persisted_mem_store_file = join(self.index_dir, "saved_state")
             np.save(persisted_mem_store_file, np.array(self.mem_store))
+
+
+    def get_number_of_records(self):
+        return len(self.mem_store) + len(self.tmp_mem_store) + self.prev_id
 
 
 

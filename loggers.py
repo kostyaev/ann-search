@@ -1,7 +1,7 @@
 from logging import config as _config
 import logging
 
-_config.fileConfig('logging.conf')
+_config.fileConfig('/Users/kostyaev/Projects/git/python/ann-searcher/logging.conf')
 
 
 main_logger = logging.getLogger("Application")
