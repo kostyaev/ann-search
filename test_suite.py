@@ -84,3 +84,17 @@ def test_find_in_multiple_index_files(index_manager):
     ids = index_manager.find_nearest(index_name="test1", vector=[3], limit=2).get()
     item = index_manager.get_item_by_id(index_name="test1", id=ids[0]).get()
     assert cmp(item, [3]) == 0
+
+
+def test_compaction(index_manager):
+    assert "test1_1.ann" in os.listdir(test_dir + "test1")
+    assert index_manager.run_compaction()
+    time.sleep(2)
+    assert "test1_0.ann" in os.listdir(test_dir + "test1")
+    assert "test1_1.ann" not in os.listdir(test_dir + "test1")
+    assert index_manager.get_number_of_records("test1").get(timeout=3) == 5
+
+    ids = index_manager.find_nearest(index_name="test1", vector=[4], limit=2).get()
+    assert len(ids) == 2
+    item = index_manager.get_item_by_id(index_name="test1", id=ids[0]).get()
+    assert cmp(item, [4]) == 0

@@ -41,7 +41,7 @@ class IndexBuilder(pykka.ThreadingActor):
             cnt += 1
 
         for i in range(index_b.get_n_items()):
-            new_index.add_item(cnt, index_a.get_item_vector(i))
+            new_index.add_item(cnt, index_b.get_item_vector(i))
             cnt += 1
 
 

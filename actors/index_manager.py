@@ -60,7 +60,7 @@ class IndexManager(pykka.ThreadingActor):
     def run_compaction(self):
         logger.info("Running compaction")
         for worker in self.workers.values():
-            worker.runCompaction()
+            worker.run_compaction()
 
     def stop_all(self):
         logger.info("Stopping workers, saving state...")
